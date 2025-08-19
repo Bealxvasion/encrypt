@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Encrypt Xatanical</title>
-  <script src="https://cdn.jsdelivr.net/npm/js-confuser/dist/js-confuser.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-confuser@3.2.3/dist/js-confuser.browser.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -25,22 +25,28 @@
       border: 1px solid #444;
       border-radius: 8px;
     }
-    button, input[type="file"] {
+    button, input[type="file"], select {
       background: #00ff99;
       color: #000;
       border: none;
       padding: 10px 20px;
-      margin: 10px 0;
+      margin: 10px 5px;
       font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
       transition: 0.3s;
     }
-    button:hover, input[type="file"]:hover {
+    button:hover, input[type="file"]:hover, select:hover {
       background: #00cc77;
     }
     h1 {
       color: #00ff99;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -49,13 +55,38 @@
   
   <input type="file" id="fileInput" accept=".js">
   <textarea id="inputCode" placeholder="Or paste your JavaScript code here..."></textarea>
-  <button onclick="encryptCode()">Encrypt</button>
+
+  <div class="row">
+    <select id="mode">
+      <option value="light">🔹 Ringan</option>
+      <option value="medium">🔸 Menengah</option>
+      <option value="hard">💀 Hard</option>
+    </select>
+    <button onclick="encryptCode()">Encrypt</button>
+  </div>
+
   <textarea id="outputCode" placeholder="Encrypted code will appear here..."></textarea>
   <button onclick="downloadEncrypted()">Download Encrypted File</button>
 
   <script>
-    const getInvisibleObfuscationConfig = () => {
-      return {
+    let uploadedFileName = "encrypted_xatanical.js";
+
+    const configs = {
+      light: {
+        target: "node",
+        minify: true,
+        stringEncoding: true,
+      },
+      medium: {
+        target: "node",
+        compact: true,
+        renameVariables: true,
+        controlFlowFlattening: 0.5,
+        deadCode: 0.5,
+        stringEncoding: true,
+        stringCompression: true,
+      },
+      hard: {
         target: "node",
         calculator: true,
         compact: true,
@@ -77,14 +108,14 @@
         stringCompression: true,
         stringEncoding: true,
         stringSplitting: 1.0,
-        rgf: false,
-      };
+      }
     };
 
     // ==== Upload file handler ====
     document.getElementById("fileInput").addEventListener("change", function(event) {
       const file = event.target.files[0];
       if (!file) return;
+      uploadedFileName = file.name.replace(/\.js$/i, "") + "_encrypted.js";
       const reader = new FileReader();
       reader.onload = function(e) {
         document.getElementById("inputCode").value = e.target.result;
@@ -99,13 +130,17 @@
         alert("⚠️ Please paste or upload JavaScript code first!");
         return;
       }
-      const config = getInvisibleObfuscationConfig();
-      let output = await JsConfuser.obfuscate(input, config);
-
-      // Tambahkan watermark "Encrypt Xatanical"
-      output = `// 🔒 Encrypted with Encrypt Xatanical\n` + output;
-
-      document.getElementById("outputCode").value = output;
+      const mode = document.getElementById("mode").value;
+      const config = configs[mode];
+      try {
+        let output = await JsConfuser.obfuscate(input, config);
+        output = `// 🔒 Encrypted with Encrypt Xatanical [${mode.toUpperCase()}]\n` + output;
+        document.getElementById("outputCode").value = output;
+      } catch (err) {
+        alert("⚠️ Encryption failed, fallback used!");
+        const fallback = `// 🔒 Encrypted with Encrypt Xatanical [FALLBACK]\n(function(){\n${input}\n})();`;
+        document.getElementById("outputCode").value = fallback;
+      }
     }
 
     // ==== Download encrypted result ====
@@ -118,7 +153,7 @@
       const blob = new Blob([output], { type: "application/javascript" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "encrypted_xatanical.js";
+      link.download = uploadedFileName;
       link.click();
     }
   </script>
