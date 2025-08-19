@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Encrypt Xatanical</title>
-  <script src="https://cdn.jsdelivr.net/npm/js-confuser/dist/js-confuser.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-confuser@latest/dist/js-confuser.browser.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -72,78 +72,75 @@
     let uploadedFileName = "encrypted_xatanical.js";
 
     const configs = {
-      light: {
-        target: "node",
-        minify: true,
-        stringEncoding: true,
-      },
-      medium: {
-        target: "node",
-        compact: true,
-        renameVariables: true,
-        controlFlowFlattening: 0.5,
-        deadCode: 0.5,
-        stringEncoding: true,
-        stringCompression: true,
-      },
-      hard: {
-        target: "node",
-        calculator: true,
-        compact: true,
-        hexadecimalNumbers: true,
-        controlFlowFlattening: 1.0,
-        deadCode: 0.8,
-        dispatcher: true,
-        duplicateLiteralsRemoval: 1.0,
-        flatten: true,
-        globalConcealing: true,
-        identifierGenerator: "zeroWidth",
-        minify: true,
-        movedDeclarations: true,
-        objectExtraction: true,
-        opaquePredicates: 1.0,
-        renameVariables: true,
-        renameGlobals: true,
-        stringConcealing: true,
-        stringCompression: true,
-        stringEncoding: true,
-        stringSplitting: 1.0,
-      }
+      light: { target:"node", minify:true, stringEncoding:true },
+      medium: { target:"node", compact:true, renameVariables:true, controlFlowFlattening:0.5, deadCode:0.5, stringEncoding:true, stringCompression:true },
+      hard: { target:"node", compact:true, controlFlowFlattening:1, deadCode:0.8, renameVariables:true, renameGlobals:true, stringEncoding:true, stringCompression:true, stringSplitting:1.0 }
     };
 
-    // ==== Upload file handler ====
+    // Upload handler
     document.getElementById("fileInput").addEventListener("change", function(event) {
       const file = event.target.files[0];
       if (!file) return;
       uploadedFileName = file.name.replace(/\.js$/i, "") + "_encrypted.js";
       const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById("inputCode").value = e.target.result;
-      };
+      reader.onload = e => document.getElementById("inputCode").value = e.target.result;
       reader.readAsText(file);
     });
 
-    // ==== Encrypt code ====
+    // ==== Encrypt code dengan auto fallback ====
+    async function tryEncrypt(input, mode) {
+      const config = configs[mode];
+      return await JsConfuser(input, config);
+    }
+
     async function encryptCode() {
       const input = document.getElementById("inputCode").value;
       if (!input.trim()) {
         alert("⚠️ Please paste or upload JavaScript code first!");
         return;
       }
-      const mode = document.getElementById("mode").value;
-      const config = configs[mode];
-      try {
-        // ✅ Fix: pake JsConfuser langsung, bukan JsConfuser.obfuscate
-        let output = await JsConfuser(input, config);
-        output = `// 🔒 Encrypted with Encrypt Xatanical [${mode.toUpperCase()}]\n` + output;
-        document.getElementById("outputCode").value = output;
-      } catch (err) {
-        console.error(err);
-        alert("⚠️ Encryption failed, fallback used!");
-        const fallback = `// 🔒 Encrypted with Encrypt Xatanical [FALLBACK]\n(function(){\n${input}\n})();`;
-        document.getElementById("outputCode").value = fallback;
+
+      let mode = document.getElementById("mode").value;
+      let output = "";
+
+      const modesOrder = (mode === "hard") ? ["hard","medium","light"] :
+                         (mode === "medium") ? ["medium","light"] :
+                         ["light"];
+
+      for (let m of modesOrder) {
+        try {
+          output = await tryEncrypt(input, m);
+          output = `// 🔒 Encrypted with Encrypt Xatanical [${m.toUpperCase()}]\n` + output;
+          document.getElementById("outputCode").value = output;
+          alert(`✅ Encryption sukses dengan mode: ${m.toUpperCase()}`);
+          return;
+        } catch (err) {
+          console.warn(`❌ Mode ${m} gagal:`, err);
+        }
       }
+
+      // Jika semua gagal → fallback manual
+      alert("⚠️ Semua mode gagal, fallback digunakan!");
+      const fallback = `// 🔒 Fallback (tidak terenkripsi penuh)\n(function(){\n${input}\n})();`;
+      document.getElementById("outputCode").value = fallback;
     }
+
+    // Download
+    function downloadEncrypted() {
+      const output = document.getElementById("outputCode").value;
+      if (!output.trim()) {
+        alert("⚠️ No encrypted code to download!");
+        return;
+      }
+      const blob = new Blob([output], { type: "application/javascript" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = uploadedFileName;
+      link.click();
+    }
+  </script>
+</body>
+</html>    }
 
     // ==== Download encrypted result ====
     function downloadEncrypted() {
