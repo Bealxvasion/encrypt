@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Encrypt Xatanical</title>
+  <script src="https://cdn.jsdelivr.net/npm/js-confuser/dist/js-confuser.browser.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0d0d0d;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    textarea {
+      width: 90%;
+      height: 200px;
+      margin: 10px 0;
+      padding: 10px;
+      font-family: monospace;
+      background: #1a1a1a;
+      color: #00ff99;
+      border: 1px solid #444;
+      border-radius: 8px;
+    }
+    button, input[type="file"] {
+      background: #00ff99;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover, input[type="file"]:hover {
+      background: #00cc77;
+    }
+    h1 {
+      color: #00ff99;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ Encrypt Xatanical</h1>
+  
+  <input type="file" id="fileInput" accept=".js">
+  <textarea id="inputCode" placeholder="Or paste your JavaScript code here..."></textarea>
+  <button onclick="encryptCode()">Encrypt</button>
+  <textarea id="outputCode" placeholder="Encrypted code will appear here..."></textarea>
+  <button onclick="downloadEncrypted()">Download Encrypted File</button>
+
+  <script>
+    const getInvisibleObfuscationConfig = () => {
+      return {
+        target: "node",
+        calculator: true,
+        compact: true,
+        hexadecimalNumbers: true,
+        controlFlowFlattening: 1.0,
+        deadCode: 0.8,
+        dispatcher: true,
+        duplicateLiteralsRemoval: 1.0,
+        flatten: true,
+        globalConcealing: true,
+        identifierGenerator: "zeroWidth",
+        minify: true,
+        movedDeclarations: true,
+        objectExtraction: true,
+        opaquePredicates: 1.0,
+        renameVariables: true,
+        renameGlobals: true,
+        stringConcealing: true,
+        stringCompression: true,
+        stringEncoding: true,
+        stringSplitting: 1.0,
+        rgf: false,
+      };
+    };
+
+    // ==== Upload file handler ====
+    document.getElementById("fileInput").addEventListener("change", function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById("inputCode").value = e.target.result;
+      };
+      reader.readAsText(file);
+    });
+
+    // ==== Encrypt code ====
+    async function encryptCode() {
+      const input = document.getElementById("inputCode").value;
+      if (!input.trim()) {
+        alert("⚠️ Please paste or upload JavaScript code first!");
+        return;
+      }
+      const config = getInvisibleObfuscationConfig();
+      let output = await JsConfuser.obfuscate(input, config);
+
+      // Tambahkan watermark "Encrypt Xatanical"
+      output = `// 🔒 Encrypted with Encrypt Xatanical\n` + output;
+
+      document.getElementById("outputCode").value = output;
+    }
+
+    // ==== Download encrypted result ====
+    function downloadEncrypted() {
+      const output = document.getElementById("outputCode").value;
+      if (!output.trim()) {
+        alert("⚠️ No encrypted code to download!");
+        return;
+      }
+      const blob = new Blob([output], { type: "application/javascript" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "encrypted_xatanical.js";
+      link.click();
+    }
+  </script>
+</body>
+</html>
