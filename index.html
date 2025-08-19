@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Encrypt Xatanical</title>
-  <script src="https://cdn.jsdelivr.net/npm/js-confuser@latest/dist/js-confuser.browser.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -25,7 +24,7 @@
       border: 1px solid #444;
       border-radius: 8px;
     }
-    button, input[type="file"], select {
+    button, input[type="file"] {
       background: #00ff99;
       color: #000;
       border: none;
@@ -36,96 +35,84 @@
       cursor: pointer;
       transition: 0.3s;
     }
-    button:hover, input[type="file"]:hover, select:hover {
+    button:hover, input[type="file"]:hover {
       background: #00cc77;
     }
     h1 {
       color: #00ff99;
     }
-    .row {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin: 10px 0;
+    .loader {
+      display: none;
+      margin: 10px;
+      border: 4px solid #333;
+      border-top: 4px solid #00ff99;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <h1>⚡ Encrypt Xatanical</h1>
+  <h1>Encrypt Xatanical</h1>
   
   <input type="file" id="fileInput" accept=".js">
-  <textarea id="inputCode" placeholder="Or paste your JavaScript code here..."></textarea>
+  <textarea id="inputCode" placeholder="Paste or upload JavaScript code here..."></textarea>
 
-  <div class="row">
-    <select id="mode">
-      <option value="light">🔹 Ringan</option>
-      <option value="medium">🔸 Menengah</option>
-      <option value="hard">💀 Hard</option>
-    </select>
-    <button onclick="encryptCode()">Encrypt</button>
-  </div>
+  <button onclick="encryptBase64()">Encrypt (Base64)</button>
+  <div class="loader" id="loader"></div>
 
-  <textarea id="outputCode" placeholder="Encrypted code will appear here..."></textarea>
+  <textarea id="outputCode" placeholder="Encrypted Base64 code will appear here..."></textarea>
   <button onclick="downloadEncrypted()">Download Encrypted File</button>
 
   <script>
-    let uploadedFileName = "encrypted_xatanical.js";
+    let uploadedFileName = "encrypted_xatanical_base64.js";
 
-    const configs = {
-      light: { target:"node", minify:true, stringEncoding:true },
-      medium: { target:"node", compact:true, renameVariables:true, controlFlowFlattening:0.5, deadCode:0.5, stringEncoding:true, stringCompression:true },
-      hard: { target:"node", compact:true, controlFlowFlattening:1, deadCode:0.8, renameVariables:true, renameGlobals:true, stringEncoding:true, stringCompression:true, stringSplitting:1.0 }
-    };
-
-    // Upload handler
+    // ==== Upload file handler ====
     document.getElementById("fileInput").addEventListener("change", function(event) {
       const file = event.target.files[0];
       if (!file) return;
-      uploadedFileName = file.name.replace(/\.js$/i, "") + "_encrypted.js";
+      uploadedFileName = file.name.replace(/\.js$/i, "") + "_encrypted_base64.js";
       const reader = new FileReader();
       reader.onload = e => document.getElementById("inputCode").value = e.target.result;
       reader.readAsText(file);
     });
 
-    // ==== Encrypt code dengan auto fallback ====
-    async function tryEncrypt(input, mode) {
-      const config = configs[mode];
-      return await JsConfuser(input, config);
-    }
-
-    async function encryptCode() {
+    // ==== Encrypt code with Base64 ====
+    function encryptBase64() {
       const input = document.getElementById("inputCode").value;
       if (!input.trim()) {
         alert("⚠️ Please paste or upload JavaScript code first!");
         return;
       }
 
-      let mode = document.getElementById("mode").value;
-      let output = "";
+      // Show loading
+      const loader = document.getElementById("loader");
+      loader.style.display = "block";
 
-      const modesOrder = (mode === "hard") ? ["hard","medium","light"] :
-                         (mode === "medium") ? ["medium","light"] :
-                         ["light"];
-
-      for (let m of modesOrder) {
+      setTimeout(() => {
         try {
-          output = await tryEncrypt(input, m);
-          output = `// 🔒 Encrypted with Encrypt Xatanical [${m.toUpperCase()}]\n` + output;
-          document.getElementById("outputCode").value = output;
-          alert(`✅ Encryption sukses dengan mode: ${m.toUpperCase()}`);
-          return;
+          const encoded = btoa(unescape(encodeURIComponent(input)));
+          const wrapper = 
+`// Encrypted with Encrypt Xatanical (Base64)
+(function(){
+  const decoded = atob("${encoded}");
+  eval(decoded);
+})();`;
+          document.getElementById("outputCode").value = wrapper;
         } catch (err) {
-          console.warn(`❌ Mode ${m} gagal:`, err);
+          alert("❌ Encryption failed: " + err.message);
+        } finally {
+          loader.style.display = "none";
         }
-      }
-
-      // Jika semua gagal → fallback manual
-      alert("⚠️ Semua mode gagal, fallback digunakan!");
-      const fallback = `// 🔒 Fallback (tidak terenkripsi penuh)\n(function(){\n${input}\n})();`;
-      document.getElementById("outputCode").value = fallback;
+      }, 800); // fake delay for loading animation
     }
 
-    // Download
+    // ==== Download encrypted result ====
     function downloadEncrypted() {
       const output = document.getElementById("outputCode").value;
       if (!output.trim()) {
@@ -140,10 +127,7 @@
     }
   </script>
 </body>
-</html>    }
-
-    // ==== Download encrypted result ====
-    function downloadEncrypted() {
+</html>    function downloadEncrypted() {
       const output = document.getElementById("outputCode").value;
       if (!output.trim()) {
         alert("⚠️ No encrypted code to download!");
