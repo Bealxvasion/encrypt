@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Encrypt Xatanical</title>
-  <script src="https://cdn.jsdelivr.net/npm/js-confuser@3.2.3/dist/js-confuser.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-confuser/dist/js-confuser.browser.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -133,10 +133,12 @@
       const mode = document.getElementById("mode").value;
       const config = configs[mode];
       try {
-        let output = await JsConfuser.obfuscate(input, config);
+        // ✅ Fix: pake JsConfuser langsung, bukan JsConfuser.obfuscate
+        let output = await JsConfuser(input, config);
         output = `// 🔒 Encrypted with Encrypt Xatanical [${mode.toUpperCase()}]\n` + output;
         document.getElementById("outputCode").value = output;
       } catch (err) {
+        console.error(err);
         alert("⚠️ Encryption failed, fallback used!");
         const fallback = `// 🔒 Encrypted with Encrypt Xatanical [FALLBACK]\n(function(){\n${input}\n})();`;
         document.getElementById("outputCode").value = fallback;
@@ -144,6 +146,21 @@
     }
 
     // ==== Download encrypted result ====
+    function downloadEncrypted() {
+      const output = document.getElementById("outputCode").value;
+      if (!output.trim()) {
+        alert("⚠️ No encrypted code to download!");
+        return;
+      }
+      const blob = new Blob([output], { type: "application/javascript" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = uploadedFileName;
+      link.click();
+    }
+  </script>
+</body>
+</html>    // ==== Download encrypted result ====
     function downloadEncrypted() {
       const output = document.getElementById("outputCode").value;
       if (!output.trim()) {
